@@ -71,10 +71,10 @@ gh issue list --state open --assignee @me --limit 20 --json number,title,labels
 ```bash
 git fetch origin <base>                                                        # 실패하면 중단
 git branch -a --format='%(refname:short)' | grep -E "^(origin/)?<prefix><n>-"   # 작업 브랜치
-gh issue view <n> --json comments --jq '[.comments[] | select(.body | test("<!-- agentic-devflow:(scope|plan|review) -->")) | {marker: (.body | capture("agentic-devflow:(?<m>[a-z]+)").m), url: .url, at: .createdAt}]'
+gh issue view <n> --json comments --jq '[.comments[] | select(.body | test("<!-- agentic-devflow:(scope|plan|note|review) -->")) | {marker: (.body | capture("agentic-devflow:(?<m>[a-z]+)").m), url: .url, at: .createdAt}]'
 ```
 
-`origin/<base>`가 최신이어야 커밋 수와 diff 범위가 맞는다. fetch가 실패하면 중단하고 원인을 보고한다. 마커 코멘트가 같은 종류로 여러 개면 **가장 최근 것이 정본**이다.
+`origin/<base>`가 최신이어야 커밋 수와 diff 범위가 맞는다. fetch가 실패하면 중단하고 원인을 보고한다. 마커 코멘트가 같은 종류로 여러 개면 **가장 최근 것이 정본**이다. `gh`는 코멘트를 오래된 순으로 돌려주므로 위 배열에서 같은 종류의 **마지막 원소**가 최신이다.
 
 **2) 정리할 것** (해당하면 먼저 처리)
 
@@ -93,14 +93,14 @@ gh pr list --head <branch> --state all --json number,state,url,mergedAt
 |---|---|
 | 작업 브랜치 없음, 마커 없음 | **intake** |
 | 작업 브랜치 없음, `scope`만 있음 | 범위 재사용을 제안. 승인 시 **plan** (거절 시 intake) |
-| 작업 브랜치 없음, `plan` 있음 | 범위·계획 재사용을 제안. 승인 시 **plan의 3항(브랜치 생성부터)** → implement |
+| 작업 브랜치 없음, `plan` 있음 | 범위·계획 재사용을 제안. 승인 시 **3-plan의 3-3(브랜치 생성)부터** → implement |
 | 브랜치 있음, 커밋 0, `plan` 있음 | 계획 승인 완료로 간주. 정본 `plan` 코멘트를 읽어 **implement** |
 | 브랜치 있음, 커밋 0, `plan` 없음 | 사용자가 손으로 만든 브랜치. 브랜치는 재사용하고 **intake** |
 | 커밋 있음, PR 없음 | 묻는다: "커밋 N개, PR 없음. 리뷰부터 진행할까요, PR로 바로 갈까요?" → **review** 또는 **ship** |
 | PR 열려 있음 | PR 상태(리뷰·CI·코멘트)를 보고하고 묻는다: 재리뷰(**review**) / 머지 정책 진행(**ship**의 머지 절차) / 종료 |
 | PR 머지됨 | 완료 보고. base checkout·pull·로컬 브랜치 삭제를 제안 |
 
-- **작업 브랜치가 없으면 어느 단계로 들어가든 plan의 3항(브랜치 생성)을 먼저 거친다.** base 브랜치에서 구현을 시작하는 경로는 없다.
+- **작업 브랜치가 없으면 어느 단계로 들어가든 3-plan의 3-3(브랜치 생성)을 먼저 거친다.** base 브랜치에서 구현을 시작하는 경로는 없다.
 - 리뷰 완료 여부는 마커로 추적하지 않는다. "커밋 있음, PR 없음"에서 한 번 묻는 비용이 마커를 관리하는 비용보다 싸다. 단, 리뷰 루프가 치명·중요를 남긴 채 끝났으면 `review` 마커 코멘트가 남아 있다 — ship이 이것을 확인한다.
 - 재개 시 정본으로 삼은 코멘트의 URL과 작성 시각을 보고에 적어, 사용자가 다른 것을 의도했는지 확인할 수 있게 한다.
 
@@ -157,4 +157,4 @@ gh pr list --head <branch> --state all --json number,state,url,mergedAt
 | 이슈 없음 / 닫힘 / 목록 조회 실패 | 없으면 중단. 닫혔으면 알리고 계속 여부를 묻는다 |
 | 미커밋 변경 · 다른 브랜치에 서 있음 | 알리고 확인. 임의 stash·commit·checkout 금지 |
 | `git fetch` 실패 | 중단. 로컬 base로 조용히 진행하지 않는다 |
-| 작업 브랜치 없이 implement 이후 단계로 진입하려 함 | plan의 브랜치 생성을 먼저 수행 |
+| 작업 브랜치 없이 implement 이후 단계로 진입하려 함 | 3-plan의 3-3(브랜치 생성)을 먼저 수행 |

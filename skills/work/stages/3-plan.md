@@ -43,12 +43,14 @@
       gh project view <project> --owner <owner> --format json --jq .id                     # 프로젝트 노드 ID (PVT_…)
       gh project item-list <project> --owner <owner> --format json --limit 500 \
         --jq '.items[] | select(.content.number == <n>) | .id'                              # 이슈의 item ID (PVTI_…)
-      gh project field-list <project> --owner <owner> --format json \
-        --jq '.fields[] | select(.name == "Status") | {id, option: (.options[] | select(.name == "In progress") | .id)}'
+      gh project field-list <project> --owner <owner> --format json --limit 100 \
+        --jq '.fields[] | select(.name == "Status")
+              | {id, option: ((.options[] | select(.name | ascii_downcase == "in progress") | .id)
+                              // error("Status 옵션 In Progress 없음"))}'
       gh project item-edit --project-id <PVT_…> --id <PVTI_…> --field-id <PVTSSF_…> --single-select-option-id <opt>
       ```
       이슈가 Project에 없으면 먼저 넣는다: `gh project item-add <project> --owner <owner> --url <이슈 URL>`.
-      실패하면 경고를 남기고 계속한다. 경고에는 처방을 넣는다 — 토큰에 `project` 스코프가 없으면 "`gh auth refresh -s project` 후 수동으로 옮기세요". 이 경고는 이 단계의 출력과 완료 보고의 `보드` 줄에 남아야 한다.
+      옵션명은 대소문자 무관으로 맞춘다 (GitHub 기본 템플릿은 `In Progress`). 위 jq는 옵션을 못 찾으면 빈 출력이 아니라 오류를 내므로 실패가 드러난다. 실패하면 경고를 남기고 계속한다. 경고에는 처방을 넣는다 — 토큰에 `project` 스코프가 없으면 "`gh auth refresh -s project` 후 수동으로 옮기세요". 이 경고는 이 단계의 출력과 완료 보고의 `보드` 줄에 남아야 한다.
 
 ## 게이트
 

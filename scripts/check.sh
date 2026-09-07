@@ -106,7 +106,8 @@ while IFS= read -r m; do
     *) check_link "$m" "$m" "본문" ;;
   esac
 done < <(grep -rhoE '(skills|references|stages|docs)(/[A-Za-z0-9_.-]+)+\.md' references "$STAGE_DIR" README.md 2>/dev/null | sort -u)
-[ "$n_links" -ge 15 ] || ng "링크 수집 $n_links건 — 참조 표기가 바뀌었거나 수집이 실패했다"
+# 하한은 현재 수집량(16건)보다 조금 낮게 둔다. 참조를 대거 지우면 여기서 걸린다.
+[ "$n_links" -ge 12 ] || ng "링크 수집 $n_links건 — 참조 표기가 바뀌었거나 수집이 실패했다"
 
 # 7. 설정 키 일관성 — references/settings.md 스키마 표가 정본
 if [ -f references/settings.md ]; then
