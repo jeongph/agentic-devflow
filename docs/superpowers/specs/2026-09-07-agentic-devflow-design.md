@@ -131,8 +131,8 @@ agentic-devflow/
 
 | 감지한 상태 | 진입 단계 |
 |---|---|
-| 작업 브랜치(`<prefix><n>-*`) 없음 | 1 intake부터. 단, 이슈에 이 플러그인이 남긴 범위·계획 코멘트가 있으면 재사용을 제안 |
-| 브랜치 있음, base 대비 커밋 없음 | 계획 승인 완료로 간주. 이슈 코멘트에서 계획을 읽어 4 implement |
+| 작업 브랜치(`<prefix><n>-*`) 없음 | 1 intake부터. 단, 이슈에 이 플러그인이 남긴 범위·계획 코멘트가 있으면 재사용을 제안하고, 승인 시 그 다음 단계부터 (브랜치 생성은 반드시 거친다) |
+| 브랜치 있음, base 대비 커밋 0, `plan` 코멘트 있음 | 계획 승인 완료로 간주. 정본 `plan` 코멘트를 읽어 4 implement |
 | 브랜치 있음, base 대비 커밋 0, `plan` 코멘트 없음 | 사용자가 손으로 만든 브랜치. 브랜치는 재사용하고 1 intake |
 | 커밋 있음, PR 없음 | 사용자에게 묻는다: "리뷰부터 진행 / PR로 바로" (리뷰 완료 마커는 두지 않는다. 잔여 치명·중요가 있을 때만 `review` 마커 코멘트가 남고, ship이 이를 확인한다) |
 | PR 열려 있음 | PR 상태 보고. 리뷰 재실행(`review`) 또는 종료를 제안 |
@@ -147,7 +147,7 @@ agentic-devflow/
 #### 1 intake — 이슈 확인
 
 - `gh issue view <n>`으로 제목·본문·라벨·assignee·상태·코멘트 전체를 읽는다.
-- 상위 이슈·sub-issue를 GraphQL로 조회한다. API 미지원이면 건너뛴다.
+- 상위 이슈·sub-issue는 같은 `gh issue view --json` 호출의 `parent`·`subIssues` 필드로 가져온다. 필드 미지원이면 "조회 불가"로 표기하고 계속하고, 인증·네트워크·이슈 미존재면 중단한다.
 - 이슈가 닫혀 있으면 알리고 계속할지 묻는다.
 - 같은 작업의 중복 이슈가 있는지 제목 키워드로 검색해 있으면 알린다 (`gh issue list --search`).
 - 프로젝트에 `docs/history/_INDEX.md`가 있으면 키워드로 선례를 찾아 참고한다. 인덱스 전체를 읽지 않는다.
@@ -169,7 +169,7 @@ agentic-devflow/
   1. 계획을 이슈 코멘트로 남긴다 (draft 승인 후). 재개 시 이 코멘트가 계획의 정본이다.
   2. 이슈에 본인이 assign돼 있지 않으면 assign한다.
   3. 브랜치를 만든다: `git fetch origin <base>` → `git checkout -b <prefix><n>-<slug> origin/<base>`. slug는 이슈 제목을 영문 kebab-case로 옮긴 것(5단어 내외, 소문자). 같은 이름의 브랜치가 있으면 알리고 묻는다.
-  4. 설정에 `project`가 있으면 org Project의 Status를 **In progress**로 바꾼다. 실패하면 경고만 남기고 흐름을 막지 않는다.
+  4. 설정에 `project`가 있으면 Project(owner는 `project_owner`, 기본 레포 owner)의 Status를 **In Progress**로 바꾼다. 옵션명은 대소문자 무관. 실패하면 처방을 담은 경고를 남기고 흐름을 막지 않으며, 완료 보고의 `보드` 줄에 반드시 남긴다.
 - 출력: 브랜치명, 분기점 SHA, 계획 코멘트 링크.
 
 #### 4 implement — 구현
@@ -194,23 +194,24 @@ agentic-devflow/
 - **치명·중요** 항목은 반영한다. 단, 지적이 기술적으로 타당한지 코드로 확인한 뒤 반영한다. 타당하지 않으면 근거와 함께 "반영하지 않음"으로 보고한다. 리뷰어의 말을 맹목적으로 따르지 않는다.
 - **제안** 항목은 목록을 보여주고 반영할 것을 고르게 한다.
 - 반영 후 검증을 다시 돌리고 커밋한다.
-- 치명·중요를 하나라도 반영했으면 5 review를 다시 돌린다 (고친 코드가 새 문제를 만들 수 있다). 사이클 통틀어 **최대 3회**, 재개해도 카운터는 이어진다. 통과를 선언하는 마지막 회차는 전체 팬아웃으로 돌린다. 3회 후에도 남으면 잔여 목록을 `<!-- agentic-devflow:review -->` 코멘트로 남기고 사용자에게 넘긴다.
+- 치명·중요를 하나라도 반영했으면 5 review를 다시 돌린다 (고친 코드가 새 문제를 만들 수 있다). **최대 3회**. 상한은 세션 단위이되 재개 시 `review` 마커의 횟수를 이어받는다. 잔여가 해소되면 같은 마커로 "해소됨" 코멘트를 남겨 최신 마커가 잔여를 가리키지 않게 한다. 이슈 맥락이 없는 `review` 단독 실행은 코멘트 대신 보고만 한다. 통과를 선언하는 마지막 회차는 전체 팬아웃으로 돌린다. 3회 후에도 남으면 잔여 목록을 `<!-- agentic-devflow:review -->` 코멘트로 남기고 사용자에게 넘긴다.
 - 통과 후 설정 `simplify`(기본 true)면 code-simplifier를 **한 번** 돌리고, 검증을 다시 돌린 뒤 커밋한다. 전제는 깨끗한 워킹 트리(아니면 건너뛴다). 검증이 깨지면 정리 결과만 되돌린다 (`git restore --source=HEAD --staged --worktree -- .` + `git clean -fd`, 전제 덕에 정리 산출물만 지워진다). 워킹 트리 전체를 무차별로 되돌리는 명령은 쓰지 않는다.
 - 출력: 반영 내역, 미반영 사유, 최종 검증 결과.
 
 #### 7 ship — PR
 
-1. 전체 검증(테스트·빌드)을 한 번 더 돌린다. 실패하면 PR을 만들지 않는다.
-2. 프로젝트에 `docs/history/`가 있으면 프로젝트 규칙(CLAUDE.md)에 따라 히스토리 문서를 작성·커밋한다. 규칙을 찾을 수 없으면 건너뛰고 알린다. (워크스페이스 규칙: 히스토리 작성 → PR 생성 순서)
-3. `git push -u origin <branch>`.
-4. PR draft를 만든다.
+1. **잔여 리뷰 확인**: 이슈의 최신 `review` 마커 코멘트에 치명·중요 잔여가 있으면 목록을 보여주고 그대로 PR을 낼지 명시적으로 확인받는다.
+2. **전체 검증**: 계획에 적은 전체 검증 명령을 실행한다. 실패하면 PR을 만들지 않는다. "자동 검증 수단 없음"이면 실행 없이 다음으로 가되 PR 본문에 그 사실을 적는다.
+3. **히스토리**: 레포에 `docs/history/`가 있거나 CLAUDE.md(및 컨벤션 문서)가 히스토리 규칙을 선언하면 그 규칙대로 작성·커밋한다. 규칙을 못 찾으면 건너뛰되 반드시 알린다. 형식을 추측해 쓰지 않는다. (워크스페이스 규칙: 히스토리 작성 → PR 생성 순서)
+4. `git push -u origin <branch>`. 실패하면 중단한다. force-push 금지.
+5. PR draft를 만든다.
    - base: 판정된 base 브랜치
    - 제목: 이슈 제목 기반, 프로젝트 커밋 컨벤션의 제목 규칙을 따른다
-   - 본문: 요약 / 변경 내역 / 검증 결과 / 이슈 연결. 기본은 `Closes #<n>`. 이슈 본문에 "머지 밖의 완료 조건"(심사·운영 반영 확인 등)이 명시돼 있으면 `Refs #<n>`을 쓴다.
+   - 본문: 요약 / 변경 내역 / 검증 결과(실행하지 않은 것을 적지 않는다) / 이슈 연결. 기본은 `Closes #<n>`. 이슈 본문에 "머지 밖의 완료 조건"(심사·운영 반영 확인 등)이 명시돼 있으면 `Refs #<n>`을 쓴다.
    - assignee: `@me`
-   - **게이트**: draft를 보여주고 승인 후 `gh pr create`.
-5. 머지 정책: 설정 `merge`가 `auto`면 CI 통과를 기다려 `gh pr merge --<merge_method> --delete-branch`. `manual`(기본)이면 PR URL을 보고하고 멈춘다. 설정이 없고 프로젝트 CLAUDE.md에 머지 정책이 있으면 그것을 따른다. **`--squash`는 설정에 명시된 경우에만** 쓴다.
-6. 머지됐으면 base로 checkout·pull, 로컬 브랜치를 삭제한다. Project Status Done 전이는 `Closes`에 의한 GitHub 자동화에 맡긴다.
+   - **게이트**: draft를 보여주고 승인 후 `gh pr create`. 실패하면 중단하고 오류를 보고한다. 이미 PR이 있으면 그 URL로 안내하고 중복 생성하지 않는다.
+6. 머지 정책: 설정 `merge`가 `auto`면 CI 통과를 기다린 뒤 한 줄 확인을 거쳐 `gh pr merge --<merge_method> --delete-branch`. `manual`이면 PR URL을 보고하고 멈춘다. 설정이 없고 프로젝트 CLAUDE.md에 머지 정책이 있으면 그것을 따르고, 그것도 없으면 `manual`과 같다. **`--squash`는 설정에 명시된 경우에만** 쓴다.
+7. 정리: 사람이 웹에서 머지했거나 `--delete-branch` 없이 머지된 경우에만 base로 checkout·pull하고 로컬 브랜치를 삭제한다 (`--delete-branch`는 로컬까지 지운다). Project Status Done 전이는 `Closes`에 의한 GitHub 자동화에 맡긴다.
 - 출력: PR URL, 머지 여부, 정리 결과.
 
 ### 4.5 게이트 원칙
@@ -228,7 +229,7 @@ agentic-devflow/
 
 - 5 review → 6 apply를 현재 브랜치에서 단독 실행한다. PR에 사람 피드백이 달린 뒤 재리뷰하거나, `work` 없이 리뷰만 받을 때 쓴다.
 - 관점 인자는 pr-review-toolkit의 어휘를 그대로 쓴다: `code` `tests` `errors` `comments` `types` `simplify` `all`. 익숙한 이름을 새로 만들지 않는다.
-- base 판정·설정 파일 읽기는 `work`와 같은 절차(§4.2)를 공유한다. 절차 본문은 `stages/5-review.md`·`6-apply.md`를 그대로 참조하고 복제하지 않는다.
+- base 판정·설정 파일 읽기는 `work`와 같은 절차(§4.2)를 공유한다. 절차 본문은 `skills/work/stages/5-review.md`·`skills/work/stages/6-apply.md`를 그대로 참조하고 복제하지 않는다.
 
 ## 6. 판정 규칙 (references/)
 
@@ -266,7 +267,6 @@ pr-review-toolkit의 `review-pr` 커맨드가 하는 선택을 이 플러그인�
 | silent-failure-hunter | try/catch·에러 처리·fallback·로깅 변경 | inherit |
 | type-design-analyzer | 클래스·record·interface·타입 신설·변경 | inherit |
 | comment-analyzer | 주석·docstring·문서 추가·변경 | inherit |
-| code-simplifier | 6 apply 통과 후 1회 (설정 `simplify`) | opus |
 | 설정 `reviewers`의 도메인 리뷰어 | 항상 (지정된 경우) | 각자 |
 
 - **모든 호출에 `model: <review_model>`을 명시**한다. 프론트매터 값과 무관하게 통일한다.
@@ -283,7 +283,7 @@ pr-review-toolkit의 `review-pr` 커맨드가 하는 선택을 이 플러그인�
 ---
 base: develop                  # 생략 시 §6.1로 판정
 branch_prefix: feature/        # 기본 feature/
-project: 4                     # org Project 번호. 생략 시 Status 갱신 건너뜀
+project: 4                     # Project 번호. 생략 시 Status 갱신 건너뜀
 project_owner: my-org          # 생략 시 레포 owner. 개인 Project면 "@me"
 reviewers:                     # 도메인 리뷰어 에이전트명. 생략 시 pr-review-toolkit만
   - spring-backend:kent-beck
@@ -322,9 +322,10 @@ merge_method: merge            # merge(기본) | rebase | squash
 
 ## 9. 검증 방법
 
-플러그인은 코드가 아니라 절차 문서라 단위 테스트가 없다. 대신 아래로 검증한다.
+플러그인은 절차 문서 위주라 단위 테스트가 없다. 대신 아래로 검증한다.
 
-1. **정적 검증**: `plugin-dev:plugin-validator` 에이전트로 매니페스트·디렉토리·프론트매터를 검사한다. `claude plugin validate`가 있으면 함께 돌린다.
+0. **구조 검사 하네스**: `scripts/check.sh`가 매니페스트·프론트매터·단계 파일 네 절·링크(런타임 기준)·설정 키 일관성·금지 동작·§9 시나리오 앵커를 검사하고, `scripts/check-selftest.sh`가 변이 픽스처로 check.sh의 검출력을 검증한다. 둘 다 CI(`check.yml`)에서 돌고 릴리스는 통과를 전제로 한다. 이 하네스는 "문장이 있는가"를 보는 회귀 앵커이지 런타임 행동을 보증하지 않는다 — 행동 검증은 아래 3의 드라이런이다.
+1. **정적 검증**: `plugin-dev:plugin-validator` 에이전트로 매니페스트·디렉토리·프론트매터를 검사한다. `claude plugin validate --strict`를 함께 돌린다.
 2. **로컬 로드**: `claude --plugin-dir ./agentic-devflow`로 띄워 `/agentic-devflow:work`·`review`가 목록에 뜨고 의존성이 만족되는지 확인한다.
 3. **시나리오 드라이런**: 샌드박스 레포(이 워크스페이스의 `playground` 등)에 테스트 이슈를 만들어 다음을 각각 확인한다.
    - 인자 있음 / 없음(브랜치 추론) / 없음(목록 선택)
@@ -336,7 +337,7 @@ merge_method: merge            # merge(기본) | rebase | squash
 
 ## 10. 배포
 
-1. 이 레포 초기 커밋(스펙·골격)은 main에 직접 한다. 이후 변경은 feature 브랜치 → PR → main.
+1. 이 레포 초기 커밋(스펙·골격·초기 구현·1차 리뷰 반영)은 main에 직접 한다. 이후 변경은 feature 브랜치 → PR → main.
 2. `.github/workflows/auto-release.yml`은 claude-plugins의 재사용 워크플로우를 쓴다 (git-flow와 동일).
 3. claude-plugins 레포 `marketplace.json`에 다음을 추가하는 PR:
    - `plugins[]`에 agentic-devflow 항목 (source url + sha)

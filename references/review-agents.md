@@ -34,11 +34,11 @@
 | `errors` | silent-failure-hunter |
 | `comments` | comment-analyzer |
 | `types` | type-design-analyzer |
-| `simplify` | **리뷰 없이** 정리만. 5-review를 건너뛰고 6-apply의 정리 절차(아래 "정리")만 수행한다 |
+| `simplify` | **리뷰 없이** 정리만. 5-review를 건너뛰고 6-apply의 정리 절차(아래 "정리")만 수행한다. 명시 인자는 설정 `simplify: false`보다 우선한다 |
 | `all` 또는 인자 없음 | 선택표대로 + 설정 `reviewers` |
 
 - 인자가 있으면 선택표 대신 인자를 따른다. 도메인 리뷰어는 `all`·인자 없음일 때만 포함한다.
-- 여러 인자는 공백으로 구분한다 (`tests errors`). `simplify`는 다른 인자와 섞이면 리뷰 뒤에 정리를 한 번 붙인다.
+- 여러 인자는 공백으로 구분한다 (`tests errors`). `simplify`는 다른 인자와 섞이면 리뷰·반영 뒤에 정리를 한 번 붙인다. 이때도 치명·중요가 남아 있으면 정리는 건너뛴다 (6-apply 5항).
 - 표에 없는 인자는 무시하지 말고 알린다: "`foo`는 인식하지 않는 관점입니다. 사용 가능: code tests errors comments types simplify all". 인식하는 인자가 하나도 없으면 중단한다.
 
 ## 호출 규약
@@ -117,6 +117,7 @@ Agent 도구 파라미터:
 | `prompt` | "`git diff origin/<base>...HEAD` 범위의 변경만 정리하라. 동작을 바꾸지 마라. 범위 밖 파일을 건드리지 마라." |
 
 - 전제: **워킹 트리가 깨끗해야 한다** (`git status --porcelain` 비어 있음). 아니면 정리를 건너뛰고 알린다. 되돌리기가 정리 결과만 정확히 지우려면 그 전이 깨끗해야 한다.
+- 정리와 되돌리기는 **레포 루트**(`git rev-parse --show-toplevel`)에서 실행한다. `git restore`·`git clean`은 현재 디렉토리 이하만 대상으로 하므로, 하위 디렉토리에서 실행하면 전제 검사(레포 전체)와 범위가 어긋난다.
 - 정리 후 검증 명령을 실행한다. 통과하면 `refactor: 리뷰 후 코드 정리`로 커밋한다.
 - 실패하면 정리 결과만 되돌린다. 정리 전이 깨끗했으므로 아래 두 명령이 지우는 것은 정리 에이전트의 산출물뿐이다.
   ```bash
