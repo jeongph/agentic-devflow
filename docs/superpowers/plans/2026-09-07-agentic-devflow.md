@@ -630,3 +630,14 @@ claude-plugins 레포에서 `feature/add-agentic-devflow` 브랜치 → 커밋 `
 - [ ] **Step 4: 설치 확인**
 
 `/plugin install agentic-devflow@jeongph-claude-plugins` 후 `claude plugin list`에 agentic-devflow와 pr-review-toolkit이 함께 뜨는지 확인.
+
+---
+
+## 리뷰 반영 (Task 11 이후, 2026-09-07)
+
+Task 1~11 완료 후 pr-review-toolkit(code-reviewer·comment-analyzer·silent-failure-hunter·pr-test-analyzer, opus)과 plugin-dev(plugin-validator·skill-reviewer)로 리뷰했다. 치명 4건·중요 10여 건을 반영했으며 상세는 스펙 §13에 기록했다. 이 과정에서 플랜의 파일 구조가 바뀌었다.
+
+- 추가: `references/preflight.md`, `scripts/check-selftest.sh`, `.github/workflows/check.yml`
+- 변경: `scripts/check.sh` 전면 재작성, `auto-release.yml`에 `needs: check`
+- Task 5·10의 참조 경로 규약: SKILL.md 안에서는 `${CLAUDE_PLUGIN_ROOT}/…` 절대 경로 (Task 본문의 상대 경로 표기는 구식)
+- Task 12(마켓플레이스 등록)는 사용자 확인 대기

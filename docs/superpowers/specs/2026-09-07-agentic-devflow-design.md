@@ -60,16 +60,22 @@ agentic-devflow/
 │   └── review/
 │       └── SKILL.md                 # /agentic-devflow:review [aspects] — 5·6단계만 단독 실행
 ├── references/
+│   ├── preflight.md                 # 두 스킬이 공유하는 사전 확인 (환경·설정·base·작업 트리·검증 명령)
 │   ├── base-resolution.md           # base 브랜치·prefix 판정표와 프리셋
-│   ├── review-agents.md             # diff 특성 → 리뷰 에이전트 선택표
+│   ├── review-agents.md             # diff 특성 → 리뷰 에이전트 선택표, 정리(code-simplifier) 절차
 │   └── settings.md                  # 프로젝트 설정 파일 스키마
+├── scripts/
+│   ├── check.sh                     # 구조 검사 (CI 게이트)
+│   └── check-selftest.sh            # check.sh의 검출력 검증 (변이 픽스처)
 ├── docs/superpowers/specs/          # 이 문서
+├── docs/superpowers/plans/          # 구현 플랜
 ├── README.md
 ├── LICENSE
 ├── .gitignore
-└── .github/workflows/auto-release.yml
+└── .github/workflows/               # check.yml (push·PR 검사), auto-release.yml (검사 통과 후 릴리스)
 ```
 
+- 스킬 본문이 참조·단계 문서를 가리킬 때는 `${CLAUDE_PLUGIN_ROOT}/…` 절대 경로를 쓴다. 스킬의 런타임 기준 디렉토리는 플러그인 루트가 아니라 `skills/<name>/`이라, 루트 기준 상대 경로는 해석되지 않는다. 참조·단계 문서 안의 경로는 루트 기준이며 스킬 본문이 그 앵커를 제공한다.
 - `commands/` 디렉토리는 두지 않는다. 스킬은 그 자체로 `/플러그인:스킬` 슬래시 커맨드이므로 스킬 하나로 "스킬 + 슬래시 커맨드"를 동시에 만족한다. `work`·`review`에는 `disable-model-invocation: true`를 붙여 **사용자만** 호출하게 한다. 무거운 흐름이 자연어에 반응해 자동 발화하지 않도록 하기 위해서다.
 - `agents/` 디렉토리는 두지 않는다. 리뷰어는 의존성과 도메인 플러그인에서 빌려 쓰고, 코드 탐색은 내장 Explore 서브에이전트로 한다.
 - `hooks/`는 두지 않는다. 지금 필요한 자동화가 없다.
@@ -112,6 +118,8 @@ agentic-devflow/
 
 ### 4.2 사전 확인 (모든 실행의 첫 동작)
 
+`work`·`review`가 공유하는 절차이며 정본은 `references/preflight.md`다. `review`는 여기서 검증 명령까지 확정한다.
+
 1. git 레포인가. 아니면 중단.
 2. `gh auth status`가 성공하고 `gh repo view`로 원격을 읽을 수 있는가. 아니면 "이 플러그인은 GitHub 이슈·PR을 전제한다"고 알리고 중단.
 3. 프로젝트 설정 파일(`.claude/agentic-devflow.md`, §7)을 읽는다. 없으면 기본값·자동 판정으로 진행한다.
@@ -125,11 +133,12 @@ agentic-devflow/
 |---|---|
 | 작업 브랜치(`<prefix><n>-*`) 없음 | 1 intake부터. 단, 이슈에 이 플러그인이 남긴 범위·계획 코멘트가 있으면 재사용을 제안 |
 | 브랜치 있음, base 대비 커밋 없음 | 계획 승인 완료로 간주. 이슈 코멘트에서 계획을 읽어 4 implement |
-| 커밋 있음, PR 없음 | 사용자에게 묻는다: "리뷰부터 진행 / PR로 바로" (리뷰 완료 여부는 마커 없이 판단하지 않는다) |
+| 브랜치 있음, base 대비 커밋 0, `plan` 코멘트 없음 | 사용자가 손으로 만든 브랜치. 브랜치는 재사용하고 1 intake |
+| 커밋 있음, PR 없음 | 사용자에게 묻는다: "리뷰부터 진행 / PR로 바로" (리뷰 완료 마커는 두지 않는다. 잔여 치명·중요가 있을 때만 `review` 마커 코멘트가 남고, ship이 이를 확인한다) |
 | PR 열려 있음 | PR 상태 보고. 리뷰 재실행(`review`) 또는 종료를 제안 |
 | PR 머지됨 | 완료 보고. 로컬 브랜치 정리를 제안 |
 
-브랜치가 다른 곳에 체크아웃돼 있거나 미커밋 변경이 있으면 **먼저 알리고 확인받는다.** 임의로 stash·커밋·checkout하지 않는다.
+상태 감지는 `git fetch origin <base>`로 시작한다 (실패 시 중단). 브랜치가 다른 곳에 체크아웃돼 있거나 미커밋 변경이 있으면 **먼저 알리고 확인받는다.** 임의로 stash·커밋·checkout하지 않는다. **작업 브랜치가 없으면 어느 단계로 들어가든 3 plan의 브랜치 생성을 먼저 거친다.** 같은 마커 코멘트가 여러 개면 가장 최근 것이 정본이다.
 
 ### 4.4 단계
 
@@ -185,8 +194,8 @@ agentic-devflow/
 - **치명·중요** 항목은 반영한다. 단, 지적이 기술적으로 타당한지 코드로 확인한 뒤 반영한다. 타당하지 않으면 근거와 함께 "반영하지 않음"으로 보고한다. 리뷰어의 말을 맹목적으로 따르지 않는다.
 - **제안** 항목은 목록을 보여주고 반영할 것을 고르게 한다.
 - 반영 후 검증을 다시 돌리고 커밋한다.
-- 치명·중요가 남아 있으면 5 review를 다시 돌린다. **최대 3회**. 3회 후에도 남으면 목록과 함께 사용자에게 넘긴다.
-- 통과 후 설정 `simplify`(기본 true)면 code-simplifier를 **한 번** 돌리고, 검증을 다시 돌린 뒤 커밋한다. 검증이 깨지면 그 변경은 되돌린다.
+- 치명·중요를 하나라도 반영했으면 5 review를 다시 돌린다 (고친 코드가 새 문제를 만들 수 있다). 사이클 통틀어 **최대 3회**, 재개해도 카운터는 이어진다. 통과를 선언하는 마지막 회차는 전체 팬아웃으로 돌린다. 3회 후에도 남으면 잔여 목록을 `<!-- agentic-devflow:review -->` 코멘트로 남기고 사용자에게 넘긴다.
+- 통과 후 설정 `simplify`(기본 true)면 code-simplifier를 **한 번** 돌리고, 검증을 다시 돌린 뒤 커밋한다. 전제는 깨끗한 워킹 트리(아니면 건너뛴다). 검증이 깨지면 정리 결과만 되돌린다 (`git restore --source=HEAD --staged --worktree -- .` + `git clean -fd`, 전제 덕에 정리 산출물만 지워진다). 워킹 트리 전체를 무차별로 되돌리는 명령은 쓰지 않는다.
 - 출력: 반영 내역, 미반영 사유, 최종 검증 결과.
 
 #### 7 ship — PR
@@ -261,6 +270,8 @@ pr-review-toolkit의 `review-pr` 커맨드가 하는 선택을 이 플러그인�
 | 설정 `reviewers`의 도메인 리뷰어 | 항상 (지정된 경우) | 각자 |
 
 - **모든 호출에 `model: <review_model>`을 명시**한다. 프론트매터 값과 무관하게 통일한다.
+- code-simplifier는 코드를 수정하는 에이전트라 리뷰 팬아웃(선택표)에서 분리해 6 apply 마지막의 "정리" 절차로만 호출한다. `review simplify` 인자는 리뷰 없이 정리만 수행한다.
+- 설정 `reviewers`의 이름이 해소되지 않으면 경고 후 제외하고 진행한다.
 - 독립적이므로 한 메시지에서 병렬 호출한다.
 - 도메인 리뷰어의 계약: Agent 도구로 호출 가능한 에이전트명, diff 범위·파일 목록을 받아 심각도별 지적을 `파일:라인`과 함께 돌려준다. kent-beck·vladimir-khorikov는 이미 이 형식이다.
 
@@ -273,17 +284,18 @@ pr-review-toolkit의 `review-pr` 커맨드가 하는 선택을 이 플러그인�
 base: develop                  # 생략 시 §6.1로 판정
 branch_prefix: feature/        # 기본 feature/
 project: 4                     # org Project 번호. 생략 시 Status 갱신 건너뜀
+project_owner: my-org          # 생략 시 레포 owner. 개인 Project면 "@me"
 reviewers:                     # 도메인 리뷰어 에이전트명. 생략 시 pr-review-toolkit만
   - spring-backend:kent-beck
   - spring-backend:vladimir-khorikov
-review_model: opus             # 기본 opus
+review_model: opus             # 기본 opus. opus | sonnet | haiku
 simplify: true                 # 기본 true. 리뷰 통과 후 code-simplifier 1회
-merge: manual                  # manual(기본) | auto
+merge: manual                  # manual(기본) | auto. auto도 머지 직전 확인 1회
 merge_method: merge            # merge(기본) | rebase | squash
 ---
 ```
 
-우선순위: 설정 파일 > 프로젝트 CLAUDE.md 선언 > 자동 판정/기본값. 워크스페이스 CLAUDE.md가 항상 로드되므로 커밋 컨벤션·히스토리 규칙 같은 것은 설정 파일에 중복 적지 않는다.
+우선순위: 설정 파일 > 프로젝트 CLAUDE.md 선언 > 자동 판정/기본값. YAML 파싱 실패는 중단이다. 안전 임계 키(`base` `branch_prefix` `merge` `merge_method`)와 철자가 비슷한 모르는 키는 진행 전에 확인받고, 자동화를 늘리는 방향의 타입 오류(`simplify` 등)는 기본값으로 대체하지 않고 묻는다. 워크스페이스 CLAUDE.md가 항상 로드되므로 커밋 컨벤션·히스토리 규칙 같은 것은 설정 파일에 중복 적지 않는다.
 
 ## 8. 오류·중단 조건
 
@@ -297,7 +309,16 @@ merge_method: merge            # merge(기본) | rebase | squash
 | 검증(테스트·빌드) 실패 | 다음 단계로 가지 않는다. 고치거나 보고 |
 | Project Status 갱신 실패 | 경고만. 흐름 유지 |
 | 리뷰 3회 후에도 치명·중요 잔존 | 사용자에게 넘긴다 |
-| 히스토리 규칙을 못 찾음 | 건너뛰고 알린다 |
+| 히스토리 규칙을 못 찾음 | 건너뛰되 "찾지 못해 건너뜁니다"를 반드시 알린다. 트리거는 `docs/history/` 존재 **또는** CLAUDE.md의 히스토리 규칙 선언 |
+| 이슈 코멘트(범위·계획) 게시 실패 | 중단. 정본이 남지 않은 채 브랜치를 만들지 않는다 |
+| `git push` 실패 | 중단. PR 생성으로 넘어가지 않는다. force-push 금지 |
+| `gh pr create` 실패 | 중단하고 오류를 그대로 보고. 이미 PR이 있으면 그 URL로 안내, 재시도로 중복 생성하지 않는다 |
+| 설정 파일 YAML 파싱 실패 | 중단. 설정 없음으로 간주하지 않는다 |
+| 검증 명령을 찾지 못함 | 사용자에게 묻는다. 없으면 "자동 검증 수단 없음"으로 기록하고 실행한 것처럼 적지 않는다 |
+| 구현 단계의 검증 3회 연속 실패 | 멈추고 시도 내역과 함께 보고 |
+| 설정 `reviewers`의 에이전트를 찾지 못함 | 경고 후 제외. 흐름 유지 |
+| sub-issue 조회 실패 | 필드 미지원이면 "조회 불가"로 표기하고 계속. 인증·네트워크·이슈 미존재면 중단 |
+| 잔여 치명·중요가 있는 채 PR 생성 | 목록을 보여주고 명시적 확인 후에만 진행 |
 
 ## 9. 검증 방법
 
@@ -330,7 +351,7 @@ merge_method: merge            # merge(기본) | rebase | squash
 | git-flow에 의존하지 않음, github-flow 플러그인 없음 | 이슈→PR이 필요로 하는 건 base·prefix 두 값. 브랜치 모델별 플러그인은 잘못된 분할 축 |
 | pr-review-toolkit 에이전트를 커맨드 대신 직접 호출 | inherit 에이전트 4종에 opus를 강제할 유일한 방법 |
 | superpowers 의존 없음 | 불필요한 절차·토큰 증가 |
-| 리뷰 완료 마커를 두지 않음 | 마커 관리 비용 > 재개 시 한 번 묻는 비용 |
+| 리뷰 완료 마커를 두지 않음 | 마커 관리 비용 > 재개 시 한 번 묻는 비용. 단 3회 후 잔여 치명·중요는 `review` 마커로 남긴다 — 미해결 경고는 세션을 넘어 살아남아야 한다 |
 | 계획·범위의 정본은 이슈 코멘트 | 워크스페이스 규칙(이슈가 단일 상태판) + compact 복원 근거 |
 | `merge` 기본값 manual | 공개 플러그인의 안전 기본값. 워크스페이스는 CLAUDE.md 정책이 우선 적용된다 |
 | 커맨드명 `work` | "work 146"으로 읽힌다. `issue`는 이슈 생성으로 오해될 수 있다 |
@@ -341,3 +362,18 @@ merge_method: merge            # merge(기본) | rebase | squash
 - 사이클 규율 지식 스킬 (compact 후 "지금 어느 단계인지"를 자동으로 안내). 지금은 `/work` 재호출로 충분
 - 이슈 없이 시작하는 경로 (`work --new "제목"`으로 이슈 생성부터)
 - spring-backend 플러그인: 백엔드 설계·보안·테스트 스킬 + kent-beck·vladimir-khorikov 이관·고도화
+
+## 13. 리뷰 반영 이력 (2026-09-07)
+
+초기 구현을 pr-review-toolkit 4종(code-reviewer·comment-analyzer·silent-failure-hunter·pr-test-analyzer, 모두 opus)과 plugin-dev 2종(plugin-validator·skill-reviewer)으로 리뷰해 반영했다. 이 문서의 해당 절은 위에서 이미 갱신했고, 절 밖의 변경은 다음과 같다.
+
+- **참조 경로 앵커링**: 스킬 본문의 모든 참조를 `${CLAUDE_PLUGIN_ROOT}/…`로 바꿨다. 스킬 런타임 기준이 `skills/<name>/`이라 루트 기준 상대 경로가 해석되지 않던 문제 (설정·base 판정·리뷰 선택이 통째로 무력화될 수 있었다).
+- **사전 확인을 `references/preflight.md`로 추출**: `review`가 `work` 본문의 절을 산문으로 가리키던 결합을 끊고, `review` 단독 경로에 검증 명령 확정 절차를 넣었다.
+- **오케스트레이터 절 번호 제거**: "실행 흐름은 1 → 5"가 작업 단계 번호와 충돌해 6·7단계를 건너뛰는 해석이 성립했다. 단계는 이름으로 부른다.
+- **sub-issue 조회**: GraphQL 대신 `gh issue view --json parent,subIssues` (gh 2.96에서 필드 확인). 실패 원인을 미지원/그 외로 나눠 처리한다.
+- **Project Status 갱신**: `gh project view --jq .id`로 프로젝트 노드 ID를 얻고, `item-list --limit 500`, owner는 `project_owner`(기본 레포 owner). 실패 경고에 `gh auth refresh -s project` 처방을 넣고 완료 보고 `보드` 줄에 반드시 남긴다.
+- **브랜치 중복 검사** 명령을 `^(origin/)?<prefix><n>-`로 통일 (원격 전용 브랜치를 놓치던 `grep -x` 제거).
+- **ship**: 잔여 리뷰 확인 → 전체 검증 → 히스토리 → push → PR → 머지 → 정리 순서. `--delete-branch`가 로컬까지 지우므로 정리 단계는 수동 머지 경로에서만. PR 템플릿의 이슈 줄은 `<Closes 또는 Refs> #<n>`.
+- **검증 하네스**: check.sh를 프론트매터 블록 한정 검사, 단계 파일 열거·순서·코드펜스 제외, 런타임 기준 링크 해석, 설정 키 일관성, 금지 동작 denylist, §9 앵커로 확장. `check-selftest.sh`가 변이 픽스처로 검출력을 검증하고, `check.yml`과 `auto-release.yml`의 `needs: check`로 CI에 연결했다.
+- 표현 정리: README 컴포넌트 표의 "명령" → "스킬 (슬래시 커맨드)", "마커 파일 없음" → "상태 파일을 만들지 않는다", 예시의 `develop` 하드코딩 → `<base>`, `review`의 `argument-hint`에 관점 목록 명시.
+

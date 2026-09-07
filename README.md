@@ -17,7 +17,7 @@ GitHub 이슈 하나를 PR까지 끌고 가는 Claude Code 플러그인.
 
 | | 이 플러그인 |
 |---|---|
-| **재개** | 멱등적. 브랜치 없음 → 커밋 없음 → PR 없음 → PR 있음 순으로 상태를 감지해 다음 단계부터. 마커 파일 없음 |
+| **재개** | 멱등적. 브랜치 없음 → 커밋 없음 → PR 없음 → PR 있음 순으로 상태를 감지해 다음 단계부터. 상태 파일을 만들지 않고 git과 이슈 코멘트에서 읽는다 |
 | **리뷰** | pr-review-toolkit 에이전트를 커맨드가 아니라 **직접 호출**해 전부 `opus`로 통일. `model: inherit` 에이전트가 세션 모델로 도는 것을 막는다 |
 | **게이트** | 밖으로 나가는 것(이슈 코멘트·PR·머지)은 반드시 draft 확인. 되돌리기 어려운 것(force-push·base 직접 커밋·임의 squash)은 하지 않는다 |
 | **브랜치 모델** | Git Flow / GitHub Flow를 플러그인으로 나누지 않는다. 필요한 건 base 브랜치와 prefix 둘뿐이라, 판정표로 정하고 애매하면 묻는다 |
@@ -38,10 +38,11 @@ GitHub 이슈 하나를 PR까지 끌고 가는 Claude Code 플러그인.
 
 | 종류 | 이름 | 역할 |
 |---|---|---|
-| 명령 | `/agentic-devflow:work [이슈번호]` | 이슈→PR 전체 진행. 인자 없으면 브랜치명에서 추론하거나 열린 이슈에서 선택 |
-| 명령 | `/agentic-devflow:review [aspects]` | 현재 브랜치 리뷰·반영만. `code` `tests` `errors` `comments` `types` `simplify` `all` |
+| 스킬 (슬래시 커맨드) | `/agentic-devflow:work [이슈번호]` | 이슈→PR 전체 진행. 인자 없으면 브랜치명에서 추론하거나 열린 이슈에서 선택 |
+| 스킬 (슬래시 커맨드) | `/agentic-devflow:review [관점...]` | 현재 브랜치 리뷰·반영만. 관점: `code` `tests` `errors` `comments` `types` `simplify` `all` |
+| 참조 | `references/preflight.md` | 두 스킬이 공유하는 사전 확인 절차 |
 | 참조 | `references/base-resolution.md` | base 브랜치·prefix 판정표 |
-| 참조 | `references/review-agents.md` | diff → 리뷰 에이전트 선택표, 호출 규약, 집계 형식 |
+| 참조 | `references/review-agents.md` | diff → 리뷰 에이전트 선택표, 호출 규약, 집계 형식, 정리 절차 |
 | 참조 | `references/settings.md` | 프로젝트 설정 파일 스키마 |
 
 ## 사용 예
@@ -105,13 +106,14 @@ pr-test-analyzer·silent-failure-hunter만 opus로 돌리고 치명·중요를 �
 ---
 base: develop                  # 생략 시 자동 판정
 branch_prefix: feature/        # 기본 feature/
-project: 4                     # org Project 번호. 있으면 Status를 In progress로
-reviewers:                     # 도메인 리뷰어. 리뷰 팬아웃에 함께 들어간다
+project: 4                     # Project 번호. 있으면 Status를 In progress로
+project_owner: my-org          # 생략 시 레포 owner. 개인 Project면 "@me"
+reviewers:                     # 도메인 리뷰어 (예시 — 해당 플러그인 설치 시)
   - spring-backend:kent-beck
   - spring-backend:vladimir-khorikov
-review_model: opus             # 기본 opus
+review_model: opus             # 기본 opus. opus | sonnet | haiku
 simplify: true                 # 리뷰 통과 후 code-simplifier 1회
-merge: manual                  # manual(기본) | auto
+merge: manual                  # manual(기본) | auto. auto도 머지 직전 확인 1회
 merge_method: merge            # merge(기본) | rebase | squash
 ---
 ```
