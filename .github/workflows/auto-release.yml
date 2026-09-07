@@ -8,7 +8,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check.sh
+      - run: bash scripts/check-selftest.sh
   release:
+    needs: check
     uses: jeongph/claude-plugins/.github/workflows/auto-release.yml@main
     permissions:
       contents: write
