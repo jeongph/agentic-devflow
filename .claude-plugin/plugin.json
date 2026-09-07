@@ -1,6 +1,6 @@
 {
   "name": "agentic-devflow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "GitHub 이슈 하나를 PR까지 — 범위 확정·계획·구현·리뷰(opus)·반영·PR 생성을 커맨드 하나로, 중단돼도 이어서",
   "author": { "name": "JeongUk Park", "url": "https://github.com/jeongph" },
   "homepage": "https://github.com/jeongph/agentic-devflow",
