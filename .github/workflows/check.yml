@@ -1,0 +1,16 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 구조 검사
+        run: bash scripts/check.sh
+      - name: 검사 스크립트 자체 검증
+        run: bash scripts/check-selftest.sh
