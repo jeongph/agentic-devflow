@@ -1,0 +1,5 @@
+.DS_Store
+.remember/
+.orca/
+*.log
+node_modules/
