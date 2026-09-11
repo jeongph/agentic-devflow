@@ -1,6 +1,6 @@
 # base 브랜치 판정
 
-이슈→PR 경로가 브랜치 모델에서 필요로 하는 값은 둘뿐이다. 어디서 따고 어디로 PR을 낼지(`base`), 작업 브랜치 이름을 무엇으로 시작할지(`branch_prefix`). 이름 있는 브랜치 모델은 이 두 값의 프리셋에 불과하다. 그래서 이 문서는 모델을 판정하지 않고 **두 값을 판정**한다.
+이 문서는 작업 브랜치의 분기점이자 PR 대상인 `base`와, 브랜치 이름의 접두사인 `branch_prefix`를 정한다. 이슈에서 PR까지 진행할 때 필요한 두 값이며, 아래 프리셋은 브랜치 모델별 기본값을 제공한다.
 
 ## 프리셋
 
@@ -18,8 +18,8 @@
 | 1 | 설정 파일에 `base` 명시 | `.claude/agentic-devflow.md` frontmatter (읽는 법은 `references/settings.md`) | 그대로. `branch_prefix`도 있으면 그대로, 없으면 `feature/` |
 | 2 | 프로젝트 CLAUDE.md의 워크플로우 선언 | CLAUDE.md(및 `@import`된 컨벤션 문서)에 "Git Flow" / "GitHub Flow" / base 브랜치명이 선언돼 있음 | 해당 프리셋 |
 | 3 | 원격에 `develop` 존재 | `git ls-remote --heads origin develop` 출력이 비어 있지 않음 | `git-flow` 프리셋 |
-| 4 | `develop` 없음 **그리고** 장수 브랜치 후보 없음 | `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`으로 기본 브랜치를 읽고, `git ls-remote --heads origin` 목록에 `dev` `development` `staging` `next` `release*`, 기본 브랜치가 아닌 `master`가 없음 | `github-flow` 프리셋 (base=기본 브랜치) |
-| 5 | 그 외 | 장수 브랜치 후보가 하나라도 있거나, 원격을 읽지 못함 | **묻는다.** 후보 브랜치 목록을 보여주고 고르게 한다 |
+| 4 | `develop` 없음 **그리고** 장기간 유지하는 브랜치 후보 없음 | `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`으로 기본 브랜치를 읽고, `git ls-remote --heads origin` 목록에 `dev` `development` `staging` `next` `release*`, 기본 브랜치가 아닌 `master`가 없음 | `github-flow` 프리셋 (base=기본 브랜치) |
+| 5 | 그 외 | 장기간 유지하는 브랜치 후보가 하나라도 있거나, 원격을 읽지 못함 | **묻는다.** 후보 브랜치 목록을 보여주고 고르게 한다 |
 
 5행에서 추정하지 않는 이유: `develop`이 없다고 곧바로 기본 브랜치로 떨어지면 `staging`을 base로 쓰는 레포에서 잘못된 base로 PR을 낸다. 그 PR을 되돌리는 비용이 질문 한 번보다 크다.
 
@@ -58,6 +58,6 @@ base가 `staging`처럼 프리셋에 없는 브랜치면 설정 파일의 `base`
 
 ## 금지
 
-- 로컬 브랜치 목록(`git branch`)으로 기본 브랜치나 base를 추측하지 않는다. 로컬은 오래됐거나 일부만 있을 수 있다. 원격(`git ls-remote`, `gh repo view`)이 진실이다.
+- 로컬 브랜치 목록(`git branch`)으로 기본 브랜치나 base를 추측하지 않는다. 로컬은 오래됐거나 일부만 있을 수 있다. 원격 정보(`git ls-remote`, `gh repo view`)를 기준으로 판단한다.
 - `git ls-remote`·`gh repo view`가 실패하면(원격 없음·인증 없음·네트워크) 중단하고 원인을 보고한다. 로컬 정보로 조용히 진행하지 않는다.
 - 판정 결과를 사용자 확인 없이 설정 파일에 쓰지 않는다.
