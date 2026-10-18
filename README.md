@@ -5,7 +5,7 @@
 
 GitHub 이슈를 바탕으로 구현, 리뷰, PR 생성을 진행합니다. 중단된 작업도 이어서 진행할 수 있습니다.
 
-`/agentic-devflow:work 146` 한 줄로 이슈 확인, 구현 범위 확정, 계획, 구현, 리뷰(opus), 리뷰 반영, PR 생성까지 진행합니다. 세션이 끊겨도 같은 명령을 다시 치면 브랜치·커밋·PR 상태를 보고 이어서 합니다.
+`/agentic-devflow:work 146` 한 줄로 이슈 확인, 구현 범위 확정, 계획, 구현, 리뷰(opus), 리뷰 반영, PR 생성까지 진행합니다. 세션이 끊겨도 같은 명령을 다시 치면 브랜치, 커밋, PR 상태를 보고 이어서 합니다.
 
 ## 개념
 
@@ -17,9 +17,9 @@ GitHub 이슈를 바탕으로 구현, 리뷰, PR 생성을 진행합니다. 중�
 
 | | 이 플러그인 |
 |---|---|
-| **재개** | 브랜치·커밋·PR 상태와 이슈 코멘트를 읽어 다음 단계를 정한다. 같은 명령을 다시 실행해도 완료한 단계는 건너뛴다. 별도 상태 파일은 만들지 않는다 |
+| **재개** | 브랜치, 커밋, PR 상태와 이슈 코멘트를 읽어 다음 단계를 정한다. 같은 명령을 다시 실행해도 완료한 단계는 건너뛴다. 별도 상태 파일은 만들지 않는다 |
 | **리뷰** | pr-review-toolkit 에이전트를 직접 호출하고 리뷰 모델을 지정한다. 기본값은 `opus`이며, `model: inherit` 설정과 관계없이 같은 모델을 사용한다 |
-| **승인 절차** | 이슈 코멘트·PR·머지는 초안이나 실행 내용을 확인받은 뒤 진행한다. force-push, base 브랜치 직접 커밋, 임의 squash는 금지한다 |
+| **승인 절차** | 이슈 코멘트, PR, 머지는 초안이나 실행 내용을 확인받은 뒤 진행한다. force-push, base 브랜치 직접 커밋, 임의 squash는 금지한다 |
 | **브랜치 모델** | Git Flow와 GitHub Flow 모두 지원한다. 기준 브랜치(`base`)와 브랜치 접두사를 판정표로 정하고, 판단하기 어려우면 사용자에게 묻는다 |
 | **도메인** | 분야별 지식과 리뷰어는 별도 플러그인에서 제공한다. 사용할 에이전트를 설정에 추가해 리뷰에 참여시킨다 |
 
@@ -30,19 +30,19 @@ GitHub 이슈를 바탕으로 구현, 리뷰, PR 생성을 진행합니다. 중�
 /plugin install agentic-devflow@jeongph-claude-plugins
 ```
 
-[pr-review-toolkit](https://github.com/anthropics/claude-plugins-official)이 의존성으로 함께 설치·활성화됩니다.
+[pr-review-toolkit](https://github.com/anthropics/claude-plugins-official)이 의존성으로 함께 설치되고 활성화됩니다.
 
-**요구사항** — `git`, [`gh`](https://cli.github.com/) (인증 완료), GitHub 원격이 있는 저장소.
+**요구사항**: `git`, [`gh`](https://cli.github.com/) (인증 완료), GitHub 원격이 있는 저장소.
 
 ## 컴포넌트
 
 | 종류 | 이름 | 역할 |
 |---|---|---|
-| 스킬 (슬래시 커맨드) | `/agentic-devflow:work [이슈번호]` | 이슈→PR 전체 진행. 인자 없으면 브랜치명에서 추론하거나 열린 이슈에서 선택 |
-| 스킬 (슬래시 커맨드) | `/agentic-devflow:review [관점...]` | 현재 브랜치 리뷰·반영만. 관점: `code` `tests` `errors` `comments` `types` `simplify` `all` |
+| 스킬 (슬래시 커맨드) | `/agentic-devflow:work [이슈번호]` | 이슈부터 PR까지 전체 진행. 인자 없으면 브랜치명에서 추론하거나 열린 이슈에서 선택 |
+| 스킬 (슬래시 커맨드) | `/agentic-devflow:review [관점...]` | 현재 브랜치의 리뷰와 반영만. 관점: `code` `tests` `errors` `comments` `types` `simplify` `all` |
 | 참조 | `references/preflight.md` | 두 스킬이 공유하는 사전 확인 절차 |
-| 참조 | `references/base-resolution.md` | base 브랜치·prefix 판정표 |
-| 참조 | `references/review-agents.md` | diff → 리뷰 에이전트 선택표, 호출 규약, 집계 형식, 정리 절차 |
+| 참조 | `references/base-resolution.md` | base 브랜치와 prefix 판정표 |
+| 참조 | `references/review-agents.md` | diff에 따른 리뷰 에이전트 선택표, 호출 규약, 집계 형식, 정리 절차 |
 | 참조 | `references/settings.md` | 프로젝트 설정 파일 스키마 |
 
 ## 사용 예
@@ -108,7 +108,7 @@ base: develop                  # 생략 시 자동 판정
 branch_prefix: feature/        # 기본 feature/
 project: 4                     # Project 번호. 있으면 Status를 In progress로
 project_owner: my-org          # 생략 시 레포 owner. 개인 Project면 "@me"
-reviewers:                     # 도메인 리뷰어 (예시 — 해당 플러그인 설치 시)
+reviewers:                     # 도메인 리뷰어 (예시, 해당 플러그인 설치 시)
   - spring-backend:kent-beck
   - spring-backend:vladimir-khorikov
 review_model: opus             # 기본 opus. opus | sonnet | haiku
@@ -124,7 +124,7 @@ merge_method: merge            # merge(기본) | rebase | squash
 
 1. 프로젝트 CLAUDE.md의 워크플로우 선언
 2. 원격에 `develop`이 있으면 `develop`
-3. `develop`이 없고 장기간 유지하는 다른 브랜치(`staging`·`dev`·`next`…)도 없으면 기본 브랜치
+3. `develop`이 없고 장기간 유지하는 다른 브랜치(`staging`, `dev`, `next` 등)도 없으면 기본 브랜치
 4. 그 외에는 **묻습니다**. 추정하지 않습니다
 
 첫 실행에서 판정 결과를 확인받고 설정 파일에 기록을 제안합니다.
@@ -132,8 +132,8 @@ merge_method: merge            # merge(기본) | rebase | squash
 ## 설계 원칙
 
 - **공통 절차를 담당한다.** Spring과 React 등 기술 분야에 관계없이 같은 작업 순서와 승인 절차를 적용한다.
-- **게시 전에 초안을 확인받는다.** 이슈 코멘트·PR·머지는 승인 없이 게시하지 않는다.
-- **추정하지 않는다.** base·이슈·브랜치가 애매하면 후보를 보여주고 묻는다.
+- **게시 전에 초안을 확인받는다.** 이슈 코멘트, PR, 머지는 승인 없이 게시하지 않는다.
+- **추정하지 않는다.** base, 이슈, 브랜치가 애매하면 후보를 보여주고 묻는다.
 - **단계별 파일과 설정으로 확장한다.** 작업 단계는 `stages/`에 파일을 추가하고, 브랜치 프리셋은 표에 행을 추가한다. 리뷰어는 설정에 이름을 등록한다. 전체 진행을 담당하는 스킬 본문은 바꾸지 않는다.
 
 ## 라이선스

@@ -8,9 +8,9 @@
 
 | 키 | 타입 | 기본값 | 설명 |
 |---|---|---|---|
-| `base` | string | 자동 판정 (`references/base-resolution.md`) | 분기·PR 대상 브랜치 |
+| `base` | string | 자동 판정 (`references/base-resolution.md`) | 분기와 PR의 대상 브랜치 |
 | `branch_prefix` | string | `feature/` | 작업 브랜치 접두사. 브랜치명은 `<branch_prefix><이슈번호>-<slug>` |
-| `project` | number | 없음 → Project Status 갱신을 건너뛴다 | GitHub Project 번호 |
+| `project` | number | 없음 (Project Status 갱신을 건너뛴다) | GitHub Project 번호 |
 | `project_owner` | string | 레포 owner (`gh repo view --json owner -q .owner.login`) | Project를 소유한 org 또는 사용자. 개인 Project면 `"@me"` |
 | `reviewers` | string[] | `[]` | 도메인 리뷰어 에이전트명. `플러그인:에이전트` 형식. 해당 플러그인이 설치돼 있어야 한다 |
 | `review_model` | `opus` \| `sonnet` \| `haiku` | `opus` | 모든 리뷰 에이전트 호출에 명시할 모델. Agent 도구의 `model` 파라미터가 받는 별칭만 허용 |
@@ -44,8 +44,8 @@ merge_method: merge            # merge(기본) | rebase | squash
 설정 파일  >  프로젝트 CLAUDE.md 선언  >  자동 판정 / 기본값
 ```
 
-- 워크스페이스·프로젝트 CLAUDE.md는 세션에 항상 로드된다. 커밋 컨벤션, 히스토리 문서 규칙, 머지 정책처럼 CLAUDE.md가 이미 담는 것은 이 파일에 중복해 적지 않는다.
-- 이 파일은 CLAUDE.md가 담기 어려운 **구조화된 값**(브랜치·번호·에이전트명·불리언)만 담는다.
+- 워크스페이스와 프로젝트의 CLAUDE.md는 세션에 항상 로드된다. 커밋 컨벤션, 히스토리 문서 규칙, 머지 정책처럼 CLAUDE.md가 이미 담는 것은 이 파일에 중복해 적지 않는다.
+- 이 파일은 CLAUDE.md가 담기 어려운 **구조화된 값**(브랜치, 번호, 에이전트명, 불리언)만 담는다.
 
 ## 읽는 법
 
@@ -56,4 +56,4 @@ merge_method: merge            # merge(기본) | rebase | squash
 5. 타입이 맞지 않는 값은 방향을 본다.
    - 기본값이 **자동화를 줄이는 방향**(`merge`→`manual`, `merge_method`→`merge`)이면 기본값으로 대체하고 알린다.
    - 기본값이 **자동화를 늘리는 방향**(`simplify`→`true`, `merge`가 `auto`로 읽힐 여지)이면 대체하지 않고 묻는다. 예: `simplify: "false"`(문자열)는 끄려는 의도일 가능성이 크다.
-6. `branch_prefix`를 정규식·`sed`에 넣을 때는 메타문자(`.` `+` `*` `#` 등)를 이스케이프한다. 기본값 `feature/`는 안전하지만 임의 문자열이 올 수 있다.
+6. `branch_prefix`를 정규식이나 `sed`에 넣을 때는 메타문자(`.` `+` `*` `#` 등)를 이스케이프한다. 기본값 `feature/`는 안전하지만 임의 문자열이 올 수 있다.
