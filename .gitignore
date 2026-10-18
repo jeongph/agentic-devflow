@@ -3,3 +3,6 @@
 .orca/
 *.log
 node_modules/
+
+# 내부 설계 문서 (로컬 전용)
+docs/superpowers/
