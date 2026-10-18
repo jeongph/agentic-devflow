@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check.sh 자체 검증 — 일부러 깨뜨린 사본에서 check.sh가 FAIL을 내는지 본다.
+# check.sh 자체 검증: 일부러 깨뜨린 사본에서 check.sh가 FAIL을 내는지 본다.
 # 사용: scripts/check-selftest.sh   → 원본 통과 1건 + 파손 검출 N건. 하나라도 놓치면 exit 1
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 2
@@ -8,7 +8,7 @@ TMP=$(mktemp -d) || exit 2
 trap 'rm -rf "$TMP"' EXIT
 fail=0
 ok() { printf '[PASS] 자체검증: %s\n' "$1"; }
-ng() { printf '[FAIL] 자체검증: %s — 깨뜨렸는데 check.sh가 통과시킴\n' "$1"; fail=1; }
+ng() { printf '[FAIL] 자체검증: %s (깨뜨렸는데 check.sh가 통과시킴)\n' "$1"; fail=1; }
 
 snapshot() { rm -rf "$TMP/w"; mkdir -p "$TMP/w"; (cd "$ROOT" && git ls-files -z --cached --others --exclude-standard | tar --null -cf - -T -) | (cd "$TMP/w" && tar xf -); }
 expect_fail() { local label=$1; shift; snapshot; ( cd "$TMP/w" && "$@" ) >/dev/null 2>&1
@@ -17,7 +17,7 @@ expect_fail() { local label=$1; shift; snapshot; ( cd "$TMP/w" && "$@" ) >/dev/n
 # 0. 원본은 반드시 통과해야 한다. 이 항목이 없으면 무조건 FAIL을 내는 check.sh도 만점을 받는다.
 snapshot
 if bash "$TMP/w/scripts/check.sh" >/dev/null 2>&1; then ok "원본 통과"; else
-  printf '[FAIL] 자체검증: 원본이 통과하지 못함 — check.sh에 거짓 양성이 있다\n'; bash "$TMP/w/scripts/check.sh" | grep FAIL; fail=1; fi
+  printf '[FAIL] 자체검증: 원본이 통과하지 못함 (check.sh에 거짓 양성이 있다)\n'; bash "$TMP/w/scripts/check.sh" | grep FAIL; fail=1; fi
 
 # 1~N. 의도적 파손. 변이 명령에 백틱을 쓰지 않는다 (명령 치환으로 실행된다).
 expect_fail "단계 파일의 절 이름 변경"        sed -i.bak 's/^## 게이트$/## 승인 게이트/' skills/work/stages/5-review.md

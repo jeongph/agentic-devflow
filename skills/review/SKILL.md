@@ -7,7 +7,7 @@ argument-hint: "[code|tests|errors|comments|types|simplify|all]"
 
 # Review
 
-현재 브랜치의 변경을 리뷰하고 반영한다. `work`의 review·apply 단계만 떼어낸 것이다.
+현재 브랜치의 변경을 리뷰하고 반영한다. `work`의 review와 apply 단계만 떼어낸 것이다.
 
 쓰는 때:
 
@@ -16,11 +16,11 @@ argument-hint: "[code|tests|errors|comments|types|simplify|all]"
 
 인자: `$ARGUMENTS`
 
-플러그인 루트: `${CLAUDE_PLUGIN_ROOT}`. 참조·단계 문서 안의 `references/…`·`skills/…` 경로는 모두 이 루트 기준이다.
+플러그인 루트: `${CLAUDE_PLUGIN_ROOT}`. 참조 문서와 단계 문서 안의 `references/…`, `skills/…` 경로는 모두 이 루트 기준이다.
 
 ## 원칙
 
-`work`와 같다. 밖으로 나가는 것(이슈 코멘트·PR 코멘트)은 draft를 먼저 보여주고, 되돌리기 어려운 것은 하지 않으며, 추정하지 않는다. push는 하지 않는다.
+`work`와 같다. 밖으로 나가는 것(이슈 코멘트, PR 코멘트)은 draft를 먼저 보여주고, 되돌리기 어려운 것은 하지 않으며, 추정하지 않는다. push는 하지 않는다.
 
 ## 사전 확인
 
@@ -30,7 +30,7 @@ argument-hint: "[code|tests|errors|comments|types|simplify|all]"
 
 - 현재 브랜치가 base 자신이면 중단한다: "base 브랜치(`<base>`)에 서 있습니다. 작업 브랜치에서 실행하세요."
 - 미커밋 변경이 있으면 알리고 확인받는다. 리뷰 대상은 커밋된 변경(`origin/<base>...HEAD`)뿐이라 미커밋 변경은 빠진다. 포함하려면 먼저 커밋하라고 안내한다.
-- 이슈 맥락: 브랜치명이 `<prefix><n>-…`면 이슈 `n`을 읽어 요약·범위(`scope` 마커 코멘트)를 프롬프트에 넣는다. 아니면 이슈 맥락 없이 diff만으로 리뷰한다.
+- 이슈 맥락: 브랜치명이 `<prefix><n>-…`면 이슈 `n`을 읽어 요약과 범위(`scope` 마커 코멘트)를 프롬프트에 넣는다. 아니면 이슈 맥락 없이 diff만으로 리뷰한다.
 
 ## 관점 인자
 
@@ -44,4 +44,4 @@ argument-hint: "[code|tests|errors|comments|types|simplify|all]"
 
 6-apply의 출력을 그대로 보고한다: 반영 내역, 미반영 사유, 최종 검증 결과, 루프 횟수, 돌린 에이전트와 모델.
 
-push는 하지 않는다. 사용자가 요청하면 `git push`. PR이 열려 있으면 push 후 PR에 반영 요약 코멘트를 제안한다 (draft 승인 후).
+push는 하지 않는다. 사용자가 요청하면 `git push`한다. PR이 열려 있으면 push 후 PR에 반영 요약 코멘트를 제안한다 (draft 승인 후).

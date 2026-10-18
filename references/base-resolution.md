@@ -6,8 +6,8 @@
 
 | 프리셋 | `base` | `branch_prefix` | 비고 |
 |---|---|---|---|
-| `git-flow` | `develop` | `feature/` | release·hotfix 경로는 이 플러그인 범위 밖 |
-| `github-flow` | 기본 브랜치 (`main`·`master` 등) | `feature/` | 트렁크 기반 + 짧은 브랜치 + PR 구성도 동작이 같다 |
+| `git-flow` | `develop` | `feature/` | release와 hotfix 경로는 이 플러그인 범위 밖 |
+| `github-flow` | 기본 브랜치 (`main`, `master` 등) | `feature/` | 트렁크 기반에 짧은 브랜치와 PR을 쓰는 구성도 동작이 같다 |
 
 ## 판정 순서
 
@@ -35,10 +35,10 @@ base 브랜치를 판정하지 못했습니다. 원격 브랜치:
 
 ## 첫 실행 확인과 기록
 
-3·4·5행으로 판정했으면 결과를 보여주고 확인받는다.
+3~5행으로 판정했으면 결과를 보여주고 확인받는다.
 
 ```
-이 레포는 base=develop, branch_prefix=feature/ 로 봤습니다 (원격에 develop 존재). 맞나요?
+이 레포는 base=develop, branch_prefix=feature/로 봤습니다 (원격에 develop 존재). 맞나요?
 ```
 
 확정되면 `.claude/agentic-devflow.md`에 기록을 **제안**한다. 파일 생성도 레포에 남는 변경이므로 승인 후에 만든다. 기록하면 다음 실행부터 1행에서 끝나 다시 묻지 않는다.
@@ -59,5 +59,5 @@ base가 `staging`처럼 프리셋에 없는 브랜치면 설정 파일의 `base`
 ## 금지
 
 - 로컬 브랜치 목록(`git branch`)으로 기본 브랜치나 base를 추측하지 않는다. 로컬은 오래됐거나 일부만 있을 수 있다. 원격 정보(`git ls-remote`, `gh repo view`)를 기준으로 판단한다.
-- `git ls-remote`·`gh repo view`가 실패하면(원격 없음·인증 없음·네트워크) 중단하고 원인을 보고한다. 로컬 정보로 조용히 진행하지 않는다.
+- `git ls-remote`나 `gh repo view`가 실패하면(원격 없음, 인증 없음, 네트워크 오류) 중단하고 원인을 보고한다. 로컬 정보로 조용히 진행하지 않는다.
 - 판정 결과를 사용자 확인 없이 설정 파일에 쓰지 않는다.
